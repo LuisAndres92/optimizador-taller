@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Configuración de la página para celulares con combo box dinámico
+# Configuración de la página para celulares con totales visibles en las pestañas
 st.set_page_config(page_title="Optimero Taller", page_icon="🛠️", layout="centered")
 
 def optimizar_cortes(cortes, longitud_tubo_cm, espesor_disco_cm):
@@ -31,7 +31,11 @@ if 'materiales' not in st.session_state:
 if 'num_filas' not in st.session_state:
     st.session_state.num_filas = 1
 
-# Lista de materiales predeterminados que siempre usas
+# Inicializar un disparador para limpiar los inputs
+if 'limpiar_inputs' not in st.session_state:
+    st.session_state.limpiar_inputs = False
+
+# Lista de materiales predeterminados
 if 'base_materiales' not in st.session_state:
     st.session_state.base_materiales = [
         "Tubo 3/4 x 3/4",
@@ -44,13 +48,11 @@ if 'base_materiales' not in st.session_state:
 with st.form("Formulario Material"):
     st.subheader("➕ Configurar Material")
     
-    # 📦 COMBO BOX (Selectbox) para elegir el material
     seleccion_material = st.selectbox(
         "Selecciona el material:",
         st.session_state.base_materiales
     )
     
-    # Si elige "Agregar material nuevo...", se abre una casilla de texto para escribirlo
     nombre_final = ""
     if seleccion_material == "➕ Agregar material nuevo...":
         nombre_nuevo = st.text_input("Escribe el nombre del nuevo material:", placeholder="Ej: Ángulo 1x1")
@@ -69,11 +71,25 @@ with st.form("Formulario Material"):
     # Generar filas dinámicas
     for i in range(st.session_state.num_filas):
         col1, col2 = st.columns(2)
+        
+        valor_medida_defecto = 0.0
+        valor_cantidad_defecto = 0
+            
         with col1:
-            medida = st.number_input(f"Tamaño Corte {i+1} (cm):", min_value=0.0, value=0.0, key=f"med_{i}")
+            medida = st.number_input(
+                f"Tamaño Corte {i+1} (cm):", 
+                min_value=0.0, 
+                value=valor_medida_defecto, 
+                key=f"med_{i}_{st.session_state.limpiar_inputs}"
+            )
             medidas_detectadas.append(medida)
         with col2:
-            cantidad = st.number_input(f"Cantidad del Corte {i+1}:", min_value=0, value=0, key=f"cant_{i}")
+            cantidad = st.number_input(
+                f"Cantidad del Corte {i+1}:", 
+                min_value=0, 
+                value=valor_cantidad_defecto, 
+                key=f"cant_{i}_{st.session_state.limpiar_inputs}"
+            )
             cantidades_detectadas.append(cantidad)
             
     st.markdown("---")
@@ -82,6 +98,7 @@ with st.form("Formulario Material"):
 # BOTÓN DE AGREGAR FILA DE CORTE (Fuera del formulario)
 if st.button("➕ Añadir otra medida a este material"):
     st.session_state.num_filas += 1
+    st.session_state.limpiar_inputs = not st.session_state.limpiar_inputs
     st.rerun()
 
 # --- PROCESAR E INYECTAR EN LA LISTA ---
@@ -92,12 +109,9 @@ if submit and nombre_final:
             cortes_expandidos.extend([med] * cant)
             
     if cortes_expandidos:
-        # 📝 MEMORIA FUTURA: Si el usuario escribió un material nuevo, lo guardamos en el Combo Box para siempre
         if seleccion_material == "➕ Agregar material nuevo..." and nombre_final not in st.session_state.base_materiales:
-            # Lo insertamos antes de la última opción ("➕ Agregar material nuevo...")
             st.session_state.base_materiales.insert(-1, nombre_final)
             
-        # Guardamos en el proyecto actual
         st.session_state.materiales.append({
             "nombre": nombre_final,
             "largo_cm": largo_m * 100,
@@ -106,7 +120,9 @@ if submit and nombre_final:
         })
         
         st.session_state.num_filas = 1
-        st.success(f"✅ ¡{nombre_final} guardado y agregado a la lista general abajo!")
+        st.session_state.limpiar_inputs = not st.session_state.limpiar_inputs
+        
+        st.toast(f"¡{nombre_final} guardado!", icon="✅")
         st.rerun()
     else:
         st.error("⚠️ Debes rellenar al menos una medida y cantidad mayor a cero.")
@@ -119,13 +135,20 @@ if st.session_state.materiales:
     if st.button("🗑️ Borrar todo el proyecto y empezar de nuevo"):
         st.session_state.materiales = []
         st.session_state.num_filas = 1
+        st.session_state.limpiar_inputs = not st.session_state.limpiar_inputs
         st.rerun()
         
     for idx, mat in enumerate(st.session_state.materiales):
-        with st.expander(f"📦 {mat['nombre']} (Barras de {mat['largo_m']}m)", expanded=True):
-            tubos_calculados = optimizar_cortes(mat['cortes'], mat['largo_cm'], espesor_disco_cm)
-            
-            st.metric(label="Total de unidades a comprar", value=f"{len(tubos_calculados)} tubos")
+        # 🧮 EJECUTAMOS EL CÁLCULO ANTES DEL TITULO: Necesitamos saber cuántos tubos salen antes de pintar la pestaña
+        tubos_calculados = optimizar_cortes(mat['cortes'], mat['largo_cm'], espesor_disco_cm)
+        total_unidades = len(tubos_calculados)
+        
+        # 🏷️ NUEVO TÍTULO DINÁMICO: Muestra el total directamente en la barra gris sin necesidad de abrirla
+        titulo_pestana = f"📦 {mat['nombre']} (Barras de {mat['largo_m']}m) ➡️ Requiere: {total_unidades} tubos"
+        
+        # Cambié 'expanded=True' a 'False' para que se muestren cerrados y limpios, destacando el total
+        with st.expander(titulo_pestana, expanded=False):
+            st.metric(label="Total de unidades a comprar", value=f"{total_unidades} tubos")
             
             for i, (tubo, sobrante) in enumerate(tubos_calculados, 1):
                 sobrante_real = sobrante + espesor_disco_cm
