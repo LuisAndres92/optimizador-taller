@@ -35,7 +35,7 @@ if 'num_filas' not in st.session_state:
 with st.form("Formulario Material"):
     st.subheader("➕ Configurar nuevo material")
     nombre = st.text_input("Nombre del material:", placeholder="Ej: Tubo Rectangular 1 1/2 x 3/4")
-    largo_m = st.number_input("Longitud de la barra comercial (metros):", min_value=1.0, max_value=12.0, value=6.0, step=0.5)
+    largo_m = st.number_input("Longitud de la unidad comercial (metros):", min_value=1.0, max_value=12.0, value=6.0, step=0.5)
     
     st.markdown("---")
     st.markdown("**📏 Medidas de los cortes requeridos:**")
@@ -95,11 +95,11 @@ if st.session_state.materiales:
         st.rerun()
         
     for idx, mat in enumerate(st.session_state.materiales):
-        with st.expander(f"📦 {mat['nombre']} (Barras de {mat['largo_m']}m)", expanded=True):
+        with st.expander(f"📦 {mat['nombre']} (Unidades de {mat['largo_m']}m)", expanded=True):
             tubos_calculados = optimizar_cortes(mat['cortes'], mat['largo_cm'], espesor_disco_cm)
             
-            st.metric(label="Total de barras a comprar", value=f"{len(tubos_calculados)} unidades")
+            st.metric(label="Total de Unidades a comprar", value=f"{len(tubos_calculados)} unidades")
             
             for i, (tubo, sobrante) in enumerate(tubos_calculados, 1):
                 sobrante_real = sobrante + espesor_disco_cm
-                st.write(f"**Barra {i}:** {tubo} | *Sobrante libre:* {sobrante_real:.1f} cm")
+                st.write(f"**Unidad {i}:** {tubo} | *Sobrante libre:* {sobrante_real:.1f} cm")
