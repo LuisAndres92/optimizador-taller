@@ -2,9 +2,10 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 # ⚙️ 1. CONFIGURACIÓN DE LA PÁGINA (Ícono para la pestaña del navegador)
-st.set_page_config(page_title="Optimero Taller", page_icon="🛠️", layout="centered")
+st.set_page_config(page_title="Optimero Taller", page_icon="📏", layout="centered")
 
-# 📱 2. INYECCIÓN PWA: Truco para forzar el ícono profesional en la pantalla de inicio del celular
+# 📱 2. INYECCIÓN PWA: Configuración del ícono de la cinta métrica (Flaticon 5813984)
+# Dirección directa de la imagen en alta definición elegida para la instalación móvil
 icono_url = "https://flaticon.com"
 
 html_pwa = f"""
@@ -44,9 +45,9 @@ def optimizar_cortes(cortes, longitud_tubo_cm, espesor_disco_cm):
 
 # --- INICIALIZAR MEMORIA GLOBAL ---
 if 'proyectos' not in st.session_state:
-    st.session_state.proyectos = {{
+    st.session_state.proyectos = {
         "Proyecto Demo": []
-    }}
+    }
 
 if 'proyecto_activo' not in st.session_state:
     st.session_state.proyecto_activo = "Proyecto Demo"
