@@ -1,8 +1,32 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
-# Configuración de la página para celulares con gestión de proyectos aislados
+# ⚙️ 1. CONFIGURACIÓN DE LA PÁGINA (Ícono para la pestaña del navegador)
 st.set_page_config(page_title="Optimero Taller", page_icon="🛠️", layout="centered")
 
+# 📱 2. INYECCIÓN PWA: Truco para forzar el ícono profesional en la pantalla de inicio del celular
+icono_url = "https://flaticon.com"
+
+html_pwa = f"""
+<head>
+    <!-- Configuración para iPhone / iOS -->
+    <link rel="apple-touch-icon" href="{icono_url}">
+    <meta name="apple-mobile-web-app-title" content="Optimero Taller">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Configuración para Android / Chrome -->
+    <link rel="icon" sizes="192x192" href="{icono_url}">
+    <link rel="icon" sizes="512x512" href="{icono_url}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0E1117">
+</head>
+"""
+# Inyectamos el bloque HTML en la cabecera de la aplicación
+components.html(html_pwa, height=0, width=0)
+
+
+# --- 3. ALGORITMO DE OPTIMIZACIÓN ---
 def optimizar_cortes(cortes, longitud_tubo_cm, espesor_disco_cm):
     cortes.sort(reverse=True)
     tubos = []
@@ -11,7 +35,6 @@ def optimizar_cortes(cortes, longitud_tubo_cm, espesor_disco_cm):
         for i, (tubo, espacio) in enumerate(tubos):
             if espacio >= (corte + espesor_disco_cm):
                 tubo.append(corte)
-                tubos[i] = (tubo, space - corte - espesor_disco_cm) # Corrección interna
                 tubos[i] = (tubo, espacio - corte - espesor_disco_cm)
                 encontrado = True
                 break
@@ -20,13 +43,11 @@ def optimizar_cortes(cortes, longitud_tubo_cm, espesor_disco_cm):
     return tubos
 
 # --- INICIALIZAR MEMORIA GLOBAL ---
-# Diccionario para almacenar múltiples proyectos. Estructura: {"Nombre Proyecto": [lista_de_materiales]}
 if 'proyectos' not in st.session_state:
-    st.session_state.proyectos = {
-        "Proyecto Demo": []  # Proyecto inicial por defecto
-    }
+    st.session_state.proyectos = {{
+        "Proyecto Demo": []
+    }}
 
-# Proyecto que está seleccionado actualmente
 if 'proyecto_activo' not in st.session_state:
     st.session_state.proyecto_activo = "Proyecto Demo"
 
@@ -44,50 +65,44 @@ st.title("🛠️ Optimizador de Cortes Profesional")
 st.markdown("---")
 
 st.subheader("📁 Gestión de Proyectos")
-col_proj1, col_proj2 = st.columns([2, 1])
+col_proj1, col_proj2 = st.columns(2)
 
 with col_proj1:
-    # Combo Box para BUSCAR y SELECCIONAR proyectos guardados
     lista_nombres_proyectos = list(st.session_state.proyectos.keys())
     proyecto_seleccionado = st.selectbox(
         "Buscar / Seleccionar Proyecto:",
         options=lista_nombres_proyectos,
         index=lista_nombres_proyectos.index(st.session_state.proyecto_activo)
     )
-    # Si el usuario cambia de proyecto en el combo box, actualizamos el activo
     if proyecto_seleccionado != st.session_state.proyecto_activo:
         st.session_state.proyecto_activo = proyecto_seleccionado
         st.session_state.num_filas = 1
         st.rerun()
 
 with col_proj2:
-    st.write("") # Espaciador visual
     st.write("") 
-    # Botón para ELIMINAR el proyecto seleccionado actualmente
+    st.write("") 
     if st.button("🗑️ Borrar Proyecto", use_container_width=True):
         if len(st.session_state.proyectos) > 1:
             nombre_a_borrar = st.session_state.proyecto_activo
             del st.session_state.proyectos[nombre_a_borrar]
-            st.session_state.proyecto_activo = list(st.session_state.proyectos.keys())[0]
+            st.session_state.proyecto_activo = list(st.session_state.proyectos.keys())
             st.toast(f"Proyecto '{nombre_a_borrar}' eliminado", icon="🗑️")
         else:
-            # Si es el único proyecto, vaciamos sus materiales en lugar de borrar el diccionario
             st.session_state.proyectos[st.session_state.proyecto_activo] = []
             st.toast("Se limpiaron los materiales del proyecto único", icon="🧹")
         st.session_state.num_filas = 1
         st.rerun()
 
-# Formulario corto para CREAR UN NUEVO PROYECTO EN BLANCO
 with st.expander("➕ Crear Nuevo Proyecto en Blanco", expanded=False):
-    nuevo_nombre_proyecto = st.text_input("Nombre del nuevo proyecto:", placeholder="Ej: Stands Uparsistem")
+    nuevo_nombre_proyecto = st.text_input("Nombre del nuevo proyecto:", placeholder="Ej: Estructuras Metálicas")
     if st.button("🚀 Inicializar Proyecto Vacío"):
         if nuevo_nombre_proyecto.strip() and nuevo_nombre_proyecto.strip() not in st.session_state.proyectos:
             nombre_limpio = nuevo_nombre_proyecto.strip()
-            # Creamos el proyecto con una lista de materiales vacía []
             st.session_state.proyectos[nombre_limpio] = []
             st.session_state.proyecto_activo = nombre_limpio
             st.session_state.num_filas = 1
-            st.success(f"¡Proyecto '{nombre_limpio}' creado! Listo para agregar materiales.")
+            st.success(f"¡Proyecto '{nombre_limpio}' creado!")
             st.rerun()
         else:
             st.error("Nombre inválido o el proyecto ya existe.")
@@ -95,10 +110,9 @@ with st.expander("➕ Crear Nuevo Proyecto en Blanco", expanded=False):
 st.markdown(f"**📍 Trabajando en:** `{st.session_state.proyecto_activo}`")
 st.markdown("---")
 
-# Espesor del disco (aplica globalmente)
 espesor_disco_cm = st.number_input("Espesor del disco de corte (cm):", min_value=0.0, max_value=1.0, value=0.3, step=0.1)
 
-# --- SECCIÓN 2: FORMULARIO PARA AGREGAR MATERIALES AL PROYECTO ACTIVO ---
+# --- SECCIÓN 2: FORMULARIO PARA AGREGAR MATERIALES ---
 with st.form("Formulario Material"):
     st.subheader("📦 Añadir Material al Proyecto")
     
@@ -136,7 +150,6 @@ if st.button("➕ Añadir otra medida a este material"):
     st.session_state.limpiar_inputs = not st.session_state.limpiar_inputs
     st.rerun()
 
-# --- PROCESAR E INYECTAR EN EL PROYECTO SELECCIONADO ---
 if submit and nombre_final:
     cortes_expandidos = []
     for med, cant in zip(medidas_detectadas, cantidades_detectadas):
@@ -147,7 +160,6 @@ if submit and nombre_final:
         if seleccion_material == "➕ Agregar material nuevo..." and nombre_final not in st.session_state.base_materiales:
             st.session_state.base_materiales.insert(-1, nombre_final)
             
-        # Insertamos el material directamente en la lista del proyecto activo
         st.session_state.proyectos[st.session_state.proyecto_activo].append({
             "nombre": nombre_final,
             "largo_cm": largo_m * 100,
@@ -162,7 +174,7 @@ if submit and nombre_final:
     else:
         st.error("⚠️ Debes rellenar al menos una medida y cantidad mayor a cero.")
 
-# --- SECCIÓN 3: MOSTRAR RESULTADOS AISLADOS DEL PROYECTO SELECCIONADO ---
+# --- SECCIÓN 3: MOSTRAR RESULTADOS ---
 materiales_proyecto_actual = st.session_state.proyectos[st.session_state.proyecto_activo]
 
 if materiales_proyecto_actual:
