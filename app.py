@@ -1,6 +1,6 @@
 import streamlit as st
 
-# Configuración de la página para celulares
+# Configuración de la página para celulares con enfoque general
 st.set_page_config(page_title="Optimero Taller", page_icon="🛠️", layout="centered")
 
 def optimizar_cortes(cortes, longitud_tubo_cm, espesor_disco_cm):
@@ -14,13 +14,13 @@ def optimizar_cortes(cortes, longitud_tubo_cm, espesor_disco_cm):
                 tubos[i] = (tubo, espacio - corte - espesor_disco_cm)
                 encontrado = True
                 break
-        if not encontrado:
+        if not encontrar:
             tubos.append(([corte], longitud_tubo_cm - corte - espesor_disco_cm))
     return tubos
 
-# --- INTERFAZ DE LA APLICACIÓN ---
-st.title("🛠️ Optimizador de Cortes - Uparsistem")
-st.write("Calcula el despiece real para tu taller incluyendo la merma del disco.")
+# --- INTERFAZ GENERAL DE LA APLICACIÓN ---
+st.title("🛠️ Optimizador de Cortes Profesional")
+st.write("Calcula el despiece real para cualquier tipo de material lineal en tu taller, incluyendo la merma del disco.")
 
 # Grosor del disco en la parte superior
 espesor_disco_cm = st.number_input("Espesor del disco de corte (cm):", min_value=0.0, max_value=1.0, value=0.3, step=0.1)
@@ -32,11 +32,11 @@ if 'materiales' not in st.session_state:
 # Formulario para agregar un material
 with st.form("Agregar Material"):
     st.subheader("➕ Agregar nuevo material o tubo")
-    nombre = st.text_input("Nombre del material:", placeholder="Ej: Tubo 3/4 x 3/4")
+    nombre = st.text_input("Nombre del material:", placeholder="Ej: Tubo Rectangular 1 1/2 x 3/4")
     largo_m = st.number_input("Longitud de la barra comercial (metros):", min_value=1.0, max_value=12.0, value=6.0, step=0.5)
     
     st.markdown("**Ingresa los cortes requeridos:**")
-    # Campos para hasta 4 medidas diferentes por material (puedes ampliarlo)
+    # Campos para ingresar las medidas del material de forma limpia
     col1, col2 = st.columns(2)
     with col1:
         c1 = st.number_input("Medida Corte 1 (cm):", min_value=0.0, value=0.0)
@@ -63,10 +63,10 @@ with st.form("Agregar Material"):
         else:
             st.error("Debes ingresar al menos una medida y cantidad válida.")
 
-# Mostrar resultados y calcular
+# Mostrar resultados y calcular de manera estandarizada
 if st.session_state.materiales:
     st.markdown("---")
-    st.header("📊 Lista de Materiales a Cotizar")
+    st.header("📊 Lista de Materiales y Despiece")
     
     if st.button("🗑️ Borrar todo y empezar de nuevo"):
         st.session_state.materiales = []
@@ -76,10 +76,10 @@ if st.session_state.materiales:
         with st.expander(f"📦 {mat['nombre']} (Barras de {mat['largo_m']}m)", expanded=True):
             tubos_calculados = optimizar_cortes(mat['cortes'], mat['largo_cm'], espesor_disco_cm)
             
-            # Alerta principal con el total de tubos en grande
-            st.metric(label="Total de barras a comprar", value=f"{len(tubos_calculados)} tubos")
+            # Alerta principal con el total de barras en grande
+            st.metric(label="Total de barras a comprar", value=f"{len(tubos_calculados)} unidades")
             
             # Tabla de despiece detallada
             for i, (tubo, sobrante) in enumerate(tubos_calculados, 1):
                 sobrante_real = sobrante + espesor_disco_cm
-                st.write(f"**Barra {i}:** {tubo} | *Sobrante:* {sobrante_real:.1f} cm")
+                st.write(f"**Barra {i}:** {tubo} | *Sobrante libre:* {sobrante_real:.1f} cm")
