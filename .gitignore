@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+
+.flet/
+build/
+tmp-flet-storage-test/
+
+Nueva carpeta/
+
+*.apk
+*.ipa
+*.pdf
